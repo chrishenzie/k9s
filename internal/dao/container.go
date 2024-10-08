@@ -46,12 +46,15 @@ func (c *Container) List(ctx context.Context, _ string) ([]runtime.Object, error
 	if err != nil {
 		return nil, err
 	}
-	res := make([]runtime.Object, 0, len(po.Spec.InitContainers)+len(po.Spec.Containers))
+	res := make([]runtime.Object, 0, len(po.Spec.InitContainers)+len(po.Spec.Containers)+len(po.Spec.EphemeralContainers))
 	for _, co := range po.Spec.InitContainers {
 		res = append(res, makeContainerRes(co, po, cmx[co.Name], true))
 	}
 	for _, co := range po.Spec.Containers {
 		res = append(res, makeContainerRes(co, po, cmx[co.Name], false))
+	}
+	for _, co := range po.Spec.EphemeralContainers {
+		res = append(res, makeContainerRes(v1.Container(co.EphemeralContainerCommon), po, cmx[co.Name], false))
 	}
 
 	return res, nil
@@ -85,6 +88,11 @@ func getContainerStatus(co string, status v1.PodStatus) *v1.ContainerStatus {
 		}
 	}
 	for _, c := range status.InitContainerStatuses {
+		if c.Name == co {
+			return &c
+		}
+	}
+	for _, c := range status.EphemeralContainerStatuses {
 		if c.Name == co {
 			return &c
 		}

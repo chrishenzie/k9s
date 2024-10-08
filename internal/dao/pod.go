@@ -139,19 +139,25 @@ func (p *Pod) Logs(path string, opts *v1.PodLogOptions) (*restclient.Request, er
 }
 
 // Containers returns all container names on pod.
-func (p *Pod) Containers(path string, includeInit bool) ([]string, error) {
+func (p *Pod) Containers(path string, includeInit bool, includeEphemeral bool) ([]string, error) {
 	pod, err := p.GetInstance(path)
 	if err != nil {
 		return nil, err
 	}
 
-	cc := make([]string, 0, len(pod.Spec.Containers)+len(pod.Spec.InitContainers))
+	cc := make([]string, 0, len(pod.Spec.Containers)+len(pod.Spec.InitContainers)+len(pod.Spec.EphemeralContainers))
 	for _, c := range pod.Spec.Containers {
 		cc = append(cc, c.Name)
 	}
 
 	if includeInit {
 		for _, c := range pod.Spec.InitContainers {
+			cc = append(cc, c.Name)
+		}
+	}
+
+	if includeEphemeral {
+		for _, c := range pod.Spec.EphemeralContainers {
 			cc = append(cc, c.Name)
 		}
 	}
